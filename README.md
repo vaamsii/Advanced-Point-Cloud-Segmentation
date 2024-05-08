@@ -1,5 +1,5 @@
 
-## Project Title: ML-Driven Segmentation for Image and Point Cloud Analysis
+## Project: ML-Driven Segmentation for Image and Point Cloud Analysis
 
 ### Overview
 This project leverages sophisticated machine learning techniques such as K-means clustering, Gaussian Mixture Models (GMM), and the Bayesian Information Criterion (BIC) to tackle complex tasks in image processing and point cloud data segmentation. These methods are crucial for applications requiring detailed image analysis and 3D space understanding, such as facial recognition systems and autonomous vehicle navigation.
