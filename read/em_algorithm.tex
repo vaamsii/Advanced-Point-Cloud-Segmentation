@@ -1,0 +1,133 @@
+\documentclass{article}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+\title{Gaussian Mixture Models: The EM Algorithm}
+
+\begin{document}
+\maketitle
+
+\section{Introduction}
+The purpose of this write up is to provide intuition on the theory behind the EM algorithm, specifically with respect to Gaussian Mixture Models. The EM algorithm is a general purpose algorithm which allows one to iteratively compute maximum likelihood estimators for statistical distributions. In our case, we are concerned with the Maximum Likelihood Estimators (MLEs) of a Gaussian Mixture Model. The MLE of a parameter of some pdf (for those who need a recap) is the most probable value for that parameter, given some dataset. We begin by describing the pdf of the Gaussian Mixture Model, for which we intend to estimate parameters. We then proceed to sketch out the proof of the EM algorithm (e.g. why it finds the MLE).
+
+\section{Gaussian Mixture Model PDF}
+The Gaussian Mixture Model's pdf looks like this:
+\begin{equation}
+	p(x_{i}) = \sum\limits_{k = 1}^{K} \pi_{k} \mathcal{N}(x_{i} | \mu_{k}, \Sigma_{k})
+\end{equation}
+The equation above describes a mixture of $K$ Gaussians, where the $k$-th Gaussian has weight $\pi_{k}$. $\mu_{k}$ and $\Sigma_{k}$ denote the mean and covariance matrix respectively of the $k$-th Guassian. The EM algorithm will find the MLE for $\pi_{k}, \mu_{k}$ and $\Sigma_{k}$.
+
+\section{Log Likelihood of the GMM}
+Recall from Probability Theory that the likelihood function for one data point just the pdf of the distribution we are trying to fit. Let $\theta$ be the tuple $(\pi_{z_{i}}, \mu_{z_{i}}, \Sigma_{z_{i}})$. The log-likelihood for $n$ data points is:
+\begin{equation}
+	l(\theta | x_{1}, \ldots, x_{n}) = \log \prod_{i = 1}^{n} \Bigg(\sum\limits_{z_{i} = 1}^{K} \pi_{z_{i}} \mathcal{N}(x_{i} | \mu_{z_{i}}, \Sigma_{z_{i}}) \Bigg)
+\end{equation}
+Note that we've swapped $z_{i}$ with $k$. The meaning remains the same, but the notation is more convenient, since $z_{i}$ can be identified as the component for the $i$th data point. Furthermore, $z_{i}$ will be treated as a variable from this point onwards. Recall that the MLE process attempts to fit the parameters of a statistical distribution to a given data set. Since the GMM case contains multiple gaussians, solving for the MLE requires us to "assign" data points to specific Gaussians (components). We do not know of this assignment in advance; otherwise we would not require this undertaking. The use of $z_{i}$ will allow us to capture the existence of this unobserved variable.
+
+Now the main goal is to find parameters $\theta$, such that the function above is maximized. Since maximizing the log likelihood directly (due to the nested summation), we make use of the EM algorithm to maximize the function.
+
+\section{Overview of the EM Algorithm}
+The EM algorithm consists of an Expectation Step and a Maximization Step. We begin with an initial guess of $\theta$. Then, we will iterate between two steps until convergence (to a local optimum; possibly global). First, we will compute the expected value of the log likelihood function fixing the existing set of parameters. In the process, we will compute a maximal posterior for component assignment (implying that the assignment is "soft", since it is based in probabilities). During the maximization step, we will fix the posterior of the component assignments and pick a new set of parameters $\theta$, such that the expected value is maximized. Intuitively, we maximize on the posterior of the component assignment, then on the parameters $\theta$ and repeat this process until we reach a local optimum. The next few sections are focused on the mathematics of this process.
+
+\section{Expectation Step}
+To complete the Expectation step, we first compute the expected value of the log likelihood function. As noted above, we hold $\theta$ fixed and find some posterior component assignment for each data point such that the expectation is maximized. We denote the posterior of the component assignment as $q(z_{i})$, which is the probability of some component assignment for the $i$th data point. This is also sometimes call the responsibility of the component.
+
+Note that our original log likelihood function $(2)$ can be rewritten as follows:
+\begin{align*}
+	l(\theta | x_{1}, \ldots, x_{n})
+		&= \log \prod_{i = 1}^{n} \Bigg(\sum\limits_{z = 1}^{K} \pi_{z} \mathcal{N}(x_{i} | \mu_{z}, \Sigma_{z}) \Bigg) \\
+		&= \log \prod_{i = 1}^{n} \Bigg(\sum\limits_{z_{i} = 1}^{K} p(x_{i} | \mu_{z_{i}} \Sigma_{z_{i}}) p(z_{i} | \pi_{z_{i}}) \Bigg) \\
+		&= \log \prod\limits_{i = 1}^{n} \Bigg(\sum\limits_{z_{i} = 1}^{K} p(x_{i}, z_{i} | \theta) \Bigg) \\
+\end{align*}
+
+Now, we can take the expectation over $q(z)$ and find the optimal $q(z)$. We will find $q(z)$, not by using conventional calculus techniques, but by using other methods. The expectation is:
+\begin{equation}
+	f(\theta) = \mathbb{E}_{q(z_{1}, \ldots z_{n})} \Bigg[ \log \prod_{i = 1}^{n} p(x_{i}, z_{i} | \theta) \Bigg]
+\end{equation}
+In order to maximize $f(\theta)$, we can show that $f(\theta)$ is always the lower bound of the log likelihood. Before doing so, we can fix $x_{i}$, to avoid cumbersome product notation (the results will still hold for what follows). Our log likelihood becomes
+\begin{equation}
+	l(\theta | x) = \log \Bigg(\sum\limits_{z = 1}^{K} p(x, z | \theta) \Bigg)
+\end{equation}
+And our expectation becomes
+\begin{equation}
+	f(\theta) = \mathbb{E}_{q(z)} [ \log p(x, z | \theta)]
+\end{equation}
+Now, we can rewrite the log likelihood as follows
+\begin{align*}
+	\log \Bigg(\sum\limits_{z = 1}^{K} p(x, z | \theta) \Bigg)
+		&= \log \Bigg(\sum\limits_{z = 1}^{K} q(z) \frac{p(x, z | \theta)}{q(z)} \Bigg) \\
+		&\geq \sum\limits_{z = 1}^{K} q(z) \log \frac{p(x, z | \theta)}{q(z)} \\
+\end{align*}
+The inequality holds due to Jensen's Inequality and the fact that $\log \sum_{z}$ is concave. It will not be proven here, though you may look up a proof if you are interested. We can continue to simplify the equation.
+\begin{align*}
+	\sum\limits_{z = 1}^{K} q(z) \log \frac{p(x, z | \theta)}{q(z)}
+		&= \sum\limits_{z = 1}^{K} q(z) \log p(x, z | \theta) - \sum\limits_{z = 1}^{K} q(z) \log q(z) \\
+		&= \mathbb{E}_{q(z)} [\log p(x, z | \theta)] + C \\
+\end{align*}
+Note that $C \geq 0$ above, which proves that the expectation is a lower bound on the log likelihood. In particular, we attain equality only if $q(z) = p(z | x, \theta)$, which is the posterior of the Gaussian components.
+\begin{align*}
+	\sum\limits_{z = 1}^{K} q(z) \log \frac{p(x, z | \theta)}{q(z)}
+		&= \sum\limits_{z = 1}^{K} p(z | x, \theta) \log \frac{p(x, z | \theta)}{p(z | x, \theta)} \\
+		&= \sum\limits_{z = 1}^{K} p(z | x, \theta) \log \frac{p(z | x, \theta)p(x | \theta)}{p(z | x, \theta)} \\
+		&= \sum\limits_{z = 1}^{K} p(z | x, \theta) \log p(x | \theta) \\
+		&= \log p(x | \theta) \sum\limits_{z = 1}^{K} p(z | x, \theta) \\
+		&= \log p(x | \theta) \\
+		&= \log \sum\limits_{z = 1}^{K} p(x, z | \theta) \\
+\end{align*}
+The last step reintroduces $z$ by taking advantage of the fact that the marginal of $x$ is equivalent to the summation of $x$ and $z$ over all values of $z$.
+
+Clearly, since $l(\theta | x) = \log \Big(\sum\limits_{z = 1}^{K} p(x, z | \theta) \Big)$, we have shown that the expectation is maximized and attains equality when $q(z) = p(z | x, \theta)$.
+
+We can now compute an explicit form for $q(z_{1}, \ldots z_{n})$. We have that
+\begin{equation}
+	q(z_{1}, \ldots z_{n}) = \prod\limits_{i = 1}^{n} p(z_{i} | x_{i}, \theta) \\
+\end{equation}
+Expanding $p(z_{i} | x_{i}, \theta)$, we have
+\begin{align*}
+	\tau_{ik} = p(z_{i} = k | x_{i})
+		&= \frac{p(z_{i} = k, x_{i})}{\sum\limits_{k' \in K} p(z_{i} = k', x_{i})} \\
+		&= \frac{\pi_{k} \mathcal{N}(x_{i} | \mu_{k} \Sigma_{k})}{\sum\limits_{k' \in K} \pi_{k'} \mathcal{N}(x_{i} | \mu_{k'} \Sigma_{k'})} \\
+\end{align*}
+Now, we can use the above to compute the expectation, which we can call $f(\theta)$:
+\begin{align*}
+	f(\theta)
+		&= \mathbb{E}_{q(z)} \Bigg[ \log \prod\limits_{i = 1}^{m} p(x_{i}, z_{i} | \theta) \Bigg] \\
+		&= \sum\limits_{i = 1}^{n} \mathbb{E}_{p(z_{i} | x_{i}, \theta)} [\log p(x_{i}, z_{i} | \theta)] \\
+		&= \sum\limits_{i = 1}^{n} \mathbb{E}_{p(z_{i} | x_{i}, \theta)} [\log \pi_{z_{i}} \mathcal{N}(x_{i} | \mu_{z_{i}} \Sigma_{z_{i}})] \\
+		&= \sum\limits_{i = 1}^{n} \sum\limits_{k = 1}^{K} \tau_{ik} [\log \pi_{z_{i}} \mathcal{N}(x_{i} | \mu_{z_{i}} \Sigma_{z_{i}})] \\
+\end{align*}
+This completes the Expectation Step. The expectation ($f(\theta)$) derived above is the maximum possible function given the parameters, $\theta$ and the posterior of the component assignment ($\tau_{ik}$).
+
+\section{Maximization Step}
+To complete the Maximization Step, we fix the posterior of the component assignments ($\tau_{ik}$), and then recompute the parameters which maximize the Expectation derived above. In order to do so, we use conventional calculus techniques and take the partial derivatives with respect to each parameter. As of now the derivation of only one parameter is shown. The rest are given without proof.
+
+We compute the value of $\pi_{k}$ using the Lagrangian
+\begin{align*}
+	L
+		&= \sum\limits_{i = 1}^{n} \sum\limits_{k = 1}^{K} \tau_{ik} [\log \pi_{k} + C] + \lambda \Bigg(1 - \sum\limits_{k' = 1}^{K} \pi_{k'}\Bigg) \\
+	\frac{\partial L}{\partial \pi_{k}} = 0
+		&=  \sum\limits \frac{\tau_{ik}}{\pi_{k}} - \lambda \\
+		&\rightarrow \pi_{k} = \frac{1}{\lambda} \sum\limits_{i = 1}^{n} \tau_{ik} \\
+		&\rightarrow \lambda = n \\
+		&\rightarrow \pi_{k} = \frac{1}{n} \sum\limits_{i = 1}^{n} \tau_{ik}
+\end{align*}
+Likewise, forming a Lagrangian and solving for $\mu_{k}$ and $\Sigma_{k}$, we get
+\begin{align*}
+	\mu_{k} &= \frac{\sum\limits_{i = 1}^{n} \tau_{ik}x_{i}}{\sum\limits_{i = 1}^{n} \tau_{ik}} \\
+	\Sigma_{k} &= \frac{\sum\limits_{i = 1}^{n} \tau_{ik}(x_{i} - \mu_{k})(x_{i} - \mu_{k})^{T}}{\sum\limits_{i = 1}^{n} \tau_{ik}}
+\end{align*}
+This completes the maximization step as well.
+
+\section{Concluding Remarks}
+Expectation Maximization starts with an initial (uneducated) guess and repeatedly computes the posterior of each component and the parameters of the model such that the expected value of the log likelihood is maximized on each step. This enables the algorithm to eventually converge to a local maxima, though repeated random initializations may be necessary in order to find a global (or at least a better local) optimum.
+
+\newpage
+\begin{thebibliography}{1}
+\bibitem{lan}
+	George Lan,
+	\textit{Mixture of Gaussian and the EM Algorithm},
+	CSE 6740 Course Notes
+\end{thebibliography}
+
+\end{document}

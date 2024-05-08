@@ -1,0 +1,4 @@
+# Ignore latex extras
+*.synctex.gz
+*.log
+*.aux
